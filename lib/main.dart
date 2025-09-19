@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 import 'package:securing_emirates/ui/constant/app_color.dart';
 import 'package:securing_emirates/ui/constant/pref.dart';
 import 'getx_routes.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/material.dart';
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   await Prefs.init();
+  await Hive.initFlutter();
+
+ 
+  await Hive.openBox('shiftBox');
   runApp(const MyApp());
 }
 
