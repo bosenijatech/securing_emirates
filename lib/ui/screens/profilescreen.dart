@@ -1,13 +1,16 @@
 
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constant/app_color.dart';
+import '../constant/pref.dart';
 
 class Profilescreen extends StatefulWidget {
   final String employeeName;
-  const Profilescreen({super.key, required this.employeeName});
+  final String supervisorId;
+  final String supervisor;
+  const Profilescreen({super.key, required this.employeeName, required this.supervisorId, required this.supervisor});
 
   @override
   State<Profilescreen> createState() => _ProfilescreenState();
@@ -15,23 +18,32 @@ class Profilescreen extends StatefulWidget {
 
 class _ProfilescreenState extends State<Profilescreen> {
   String employeeName = "Employee";
+  String supervisorId = "123";
+  String supervisor = "Team Lead";
+  String email = "";
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
-    
   }
 
- Future<void> _loadProfile() async {
-  // Simulate API or SharedPreferences loading
-  await Future.delayed(const Duration(seconds: 2));
+
+
+Future<void> _loadProfile() async {
+  await Future.delayed(const Duration(seconds: 2)); 
+
+  final prefs = await SharedPreferences.getInstance();
+  final savedEmail = prefs.getString("UserEmail");
+  print("Saved Email: $savedEmail");
 
   setState(() {
-    
     employeeName = widget.employeeName;
-    isLoading = false; 
+    supervisorId = widget.supervisorId;
+     supervisor = (widget.supervisor.isEmpty) ? "Team Lead" : widget.supervisor;
+    email = savedEmail ?? "No email found"; 
+    isLoading = false;
   });
 }
 
@@ -40,15 +52,13 @@ class _ProfilescreenState extends State<Profilescreen> {
   Widget build(BuildContext context) {
     return isLoading
         ? const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           )
         : Scaffold(
             appBar: AppBar(
               backgroundColor: AppColor.bgLight,
-             scrolledUnderElevation: 0,
-   excludeHeaderSemantics: true, 
+              scrolledUnderElevation: 0,
+              excludeHeaderSemantics: true,
               title: const Text("Profile"),
             ),
             body: SingleChildScrollView(
@@ -62,9 +72,14 @@ class _ProfilescreenState extends State<Profilescreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const CircleAvatar(
+                            CircleAvatar(
                               radius: 60,
-                              // backgroundImage: AssetImage("assets/profile.jpg"),
+                              backgroundColor: Colors.grey[300],
+                              child: const Icon(
+                                Icons.person,
+                                size: 60,
+                                color: Colors.black,
+                              ),
                             ),
                           ],
                         ),
@@ -75,9 +90,9 @@ class _ProfilescreenState extends State<Profilescreen> {
                               fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 10),
-                        const Text('Team Leader'),
+                         Text(supervisor),
                         const SizedBox(height: 10),
-                        const Text('UAE'),
+                         Text('UAE'),
                       ],
                     ),
                     const SizedBox(height: 40),
@@ -134,27 +149,9 @@ class _ProfilescreenState extends State<Profilescreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       padding: const EdgeInsets.all(16),
-                      child: const Text(
-                        'Rhonaliza@emiratescaptain.aes',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text('Emirates Number',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.normal)),
-                    const SizedBox(height: 10),
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: AppColor.primarylight,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.all(16),
-                      child: const Text(
-                        '091670 03223',
-                        style: TextStyle(
+                      child: Text(
+                        email.toString(),
+                        style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),

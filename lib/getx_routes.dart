@@ -11,7 +11,7 @@ import 'ui/screens/regularizescreen.dart';
 final List<GetPage> getPages = [
   GetPage(name: '/', page: () => const LandingScreen()),
   GetPage(name: '/login', page: () => const Loginscreen()),
-  GetPage(name: '/home', page: () =>  Homepage(employeeName: '',)),
+  GetPage(name: '/home', page: () =>  Homepage(employeeName: '', supervisorId: '', supervisor: '',)),
   GetPage(name: '/checkin', page: () => const Checkinpage()),
   GetPage(name: '/employeereports', page: () => const Employeereportspage()),
     GetPage(name: '/regularize', page: () => const Regularizescreen(date: '', checkIn: '', checkOut: '', internalId: '', employee: '', hoursWorked: '', salesOrder: '',)),
