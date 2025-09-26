@@ -86,6 +86,7 @@ class RegularizationList {
   String? shiftMaster;
   String? reqstatus;
   DateTime? createdAt;
+   String? salesOrderId;
   DateTime? updatedAt;
   int? v;
 
@@ -109,6 +110,7 @@ class RegularizationList {
     this.shiftMaster,
     this.reqstatus,
     this.createdAt,
+    this.salesOrderId,
     this.updatedAt,
     this.v,
   });
@@ -133,6 +135,7 @@ class RegularizationList {
         attendanceStatus: json["attendanceStatus"],
         shiftMaster: json["shiftMaster"],
         reqstatus: json["reqstatus"],
+        salesOrderId: json["salesOrderId"],
         createdAt: json["createdAt"] == null
             ? null
             : DateTime.parse(json["createdAt"]),
@@ -161,6 +164,7 @@ class RegularizationList {
         "attendanceStatus": attendanceStatus,
         "shiftMaster": shiftMaster,
         "reqstatus": reqstatus,
+        "salesOrderId": salesOrderId,
         "createdAt": createdAt?.toIso8601String(),
         "updatedAt": updatedAt?.toIso8601String(),
         "__v": v,

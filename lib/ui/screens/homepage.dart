@@ -930,7 +930,7 @@ class _HomepageState extends State<Homepage> {
                             context,
                             MaterialPageRoute(
                               builder: (_) => Checkoutscreen(
-                                internalId: lastSalesOrderId ?? "",
+                                                        internalId: lastSalesOrderId ?? "",
                                 timeIn: lastCheckedInTime.toString(),
                               ),
                             ),

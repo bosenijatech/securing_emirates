@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:securing_emirates/model/timesheetmodel/updatetimemodel.dart';
 import 'package:intl/intl.dart';
 
+import '../../global/global_data.dart';
+import '../../model/regularization/getregularizationlistmodel.dart';
 import '../../service/captain_emirates_apiservice.dart';
 import '../../service/comFuncService.dart';
 import '../constant/app_color.dart';
@@ -13,12 +15,13 @@ import '../widgets/custom_textfield.dart';
 
 class Checkoutscreen extends StatefulWidget {
   final String internalId;
+
   final String timeIn;
 
   const Checkoutscreen({
     super.key,
     required this.internalId,
-    required this.timeIn,
+    required this.timeIn, 
   });
 
   @override
@@ -26,15 +29,31 @@ class Checkoutscreen extends StatefulWidget {
 }
 
 class _CheckoutscreenState extends State<Checkoutscreen> {
-  late TextEditingController salesnumController;
+   TextEditingController? salesnumController;
   bool isLoading = false;
   String workedTimeStr = "0 mins";
    TextEditingController remark = TextEditingController();
+   
 
   @override
   void initState() {
     super.initState();
-    salesnumController = TextEditingController(text: widget.internalId);
+    // salesnumController = TextEditingController(text: widget.internalId);
+     final record = GlobalData.salesOrderMap[widget.internalId];
+if (GlobalData.salesOrderMap.isNotEmpty) {
+  final lastKey = GlobalData.salesOrderMap.keys.first;
+  final lastRecord = GlobalData.salesOrderMap[lastKey];
+
+  print("Last SalesOrderId: $lastKey");
+  print("Record: ${lastRecord?.employee}");
+
+  salesnumController = TextEditingController(
+    text: lastRecord?.salesOrderId?.toString() ?? "❌ Not Found",
+  );
+} else {
+  salesnumController = TextEditingController(text: "❌ Not Found");
+}
+  
     print("✅ Checkoutscreen -> internalId: ${widget.internalId}");
     saveInternalId(widget.internalId);
 

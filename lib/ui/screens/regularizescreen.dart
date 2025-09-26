@@ -19,7 +19,7 @@ class Regularizescreen extends StatefulWidget {
   final String internalId;
   final String employee;
   final String hoursWorked;
-  final String salesOrder;
+  final String salesOrderId;
 
   const Regularizescreen({
     super.key,
@@ -29,7 +29,7 @@ class Regularizescreen extends StatefulWidget {
     required this.internalId,
     required this.employee,
     required this.hoursWorked,
-    required this.salesOrder,
+    required this.salesOrderId,
   });
 
   @override
@@ -163,7 +163,7 @@ class _RegularizescreenState extends State<Regularizescreen> {
         "timesheetRef": widget.internalId,
         "attendanceDate": formattedDate,
         "employee": widget.employee,
-        "salesOrder": widget.salesOrder,
+        "salesOrderId": widget.salesOrderId,
         "timeIn": timeIn,
         "timeOut": timeOut,
         "hoursWorked": hoursWorkedDecimal,

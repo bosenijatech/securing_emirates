@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 import '../../controller/base_controller.dart';
+import '../../global/global_data.dart';
 import '../../model/regularization/getregularizationlistmodel.dart';
 import '../../model/regularization/getsingleregularizationlistmodel.dart';
 import '../../service/captain_emirates_apiservice.dart';
@@ -35,7 +36,7 @@ class _EmployeereportspageState extends State<Employeereportspage>
 
   List<RegularizationList> regularizationList = [];
   List<RegularizationList> allData = [];
-
+ Map<String, RegularizationList> salesOrderMap = {};
   DateTime? fromDate;
   DateTime? toDate;
   String searchQuery = "";
@@ -85,6 +86,7 @@ class _EmployeereportspageState extends State<Employeereportspage>
         setState(() => isLoading = false);
         return;
       }
+      
 
       GetregularizationlistModel response =
           GetregularizationlistModel.fromJson(decoded);
@@ -92,6 +94,29 @@ class _EmployeereportspageState extends State<Employeereportspage>
       setState(() {
         allData = response.data;
         regularizationList = response.data;
+  // 🔹 Filter only records with check-in
+      final checkedInRecords = allData
+          .where((e) => e.timeIn != null && e.timeIn!.isNotEmpty)
+          .toList();
+
+      // 🔹 Get the last record
+      if (checkedInRecords.isNotEmpty) {
+        final lastRecord = checkedInRecords.last;
+        if (lastRecord.salesOrderId != null &&
+            lastRecord.salesOrderId!.isNotEmpty) {
+          GlobalData.salesOrderMap = {
+            lastRecord.salesOrderId!: lastRecord
+          };
+          print(
+              "✅ Global Map contains only last salesOrderId: ${GlobalData.salesOrderMap.keys.toList()}");
+        } else {
+          GlobalData.salesOrderMap = {};
+          print("⚠️ Last record has no salesOrderId");
+        }
+      } else {
+        GlobalData.salesOrderMap = {};
+        print("⚠️ No checked-in records found");
+      }
         isLoading = false;
       });
     } catch (e) {
@@ -408,7 +433,7 @@ class _EmployeereportspageState extends State<Employeereportspage>
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        e.internalId.toString(),
+                        e.salesOrderId.toString(),
                         style: const TextStyle(
                           color: Colors.blue,
                           fontWeight: FontWeight.bold,
@@ -484,7 +509,7 @@ class _EmployeereportspageState extends State<Employeereportspage>
                                       internalId: e.internalId.toString(),
                                       employee: e.employee.toString(),
                                       hoursWorked: e.hoursWorked.toString(),
-                                      salesOrder: e.salesOrder.toString(),
+                                      salesOrderId: e.salesOrderId.toString(),
                                     ),
                                   ),
                                 ).then((regularized) {

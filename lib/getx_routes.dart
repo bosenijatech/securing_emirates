@@ -14,6 +14,6 @@ final List<GetPage> getPages = [
   GetPage(name: '/home', page: () =>  Homepage(employeeName: '', supervisorId: '', supervisor: '',)),
   GetPage(name: '/checkin', page: () => const Checkinpage()),
   GetPage(name: '/employeereports', page: () => const Employeereportspage()),
-    GetPage(name: '/regularize', page: () => const Regularizescreen(date: '', checkIn: '', checkOut: '', internalId: '', employee: '', hoursWorked: '', salesOrder: '',)),
+    GetPage(name: '/regularize', page: () => const Regularizescreen(date: '', checkIn: '', checkOut: '', internalId: '', employee: '', hoursWorked: '', salesOrderId: '',)),
       GetPage(name: '/checkout', page: () =>  Checkoutscreen(internalId: '', timeIn: '',)),
 ];
