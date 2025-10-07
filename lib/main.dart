@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
+import 'package:securing_emirates/service/captain_emirates_apiservice.dart';
 import 'package:securing_emirates/ui/constant/app_color.dart';
 import 'package:securing_emirates/ui/constant/pref.dart';
+import 'getx_contoller.dart/stauts_contoller.dart';
 import 'getx_routes.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +14,10 @@ void main() async{
   await Prefs.init();
   await Hive.initFlutter();
 
- 
+   final api = apiService(); 
+
+  // 2️⃣ Register StatusController globally
+  Get.put(StatusController(api: api));
   await Hive.openBox('shiftBox');
   runApp(const MyApp());
 }

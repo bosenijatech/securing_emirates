@@ -1,5 +1,3 @@
-
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart' hide Response;
@@ -36,7 +34,7 @@ class _EmployeereportspageState extends State<Employeereportspage>
 
   List<RegularizationList> regularizationList = [];
   List<RegularizationList> allData = [];
- Map<String, RegularizationList> salesOrderMap = {};
+  Map<String, RegularizationList> salesOrderMap = {};
   DateTime? fromDate;
   DateTime? toDate;
   String searchQuery = "";
@@ -86,37 +84,36 @@ class _EmployeereportspageState extends State<Employeereportspage>
         setState(() => isLoading = false);
         return;
       }
-      
 
-      GetregularizationlistModel response =
-          GetregularizationlistModel.fromJson(decoded);
+      GetregularizationlistModel response = GetregularizationlistModel.fromJson(
+        decoded,
+      );
 
       setState(() {
         allData = response.data;
         regularizationList = response.data;
-  // 🔹 Filter only records with check-in
-      final checkedInRecords = allData
-          .where((e) => e.timeIn != null && e.timeIn!.isNotEmpty)
-          .toList();
+        // 🔹 Filter only records with check-in
+        final checkedInRecords = allData
+            .where((e) => e.timeIn != null && e.timeIn!.isNotEmpty)
+            .toList();
 
-      // 🔹 Get the last record
-      if (checkedInRecords.isNotEmpty) {
-        final lastRecord = checkedInRecords.last;
-        if (lastRecord.salesOrderId != null &&
-            lastRecord.salesOrderId!.isNotEmpty) {
-          GlobalData.salesOrderMap = {
-            lastRecord.salesOrderId!: lastRecord
-          };
-          print(
-              "✅ Global Map contains only last salesOrderId: ${GlobalData.salesOrderMap.keys.toList()}");
+        // 🔹 Get the last record
+        if (checkedInRecords.isNotEmpty) {
+          final lastRecord = checkedInRecords.last;
+          if (lastRecord.salesOrderId != null &&
+              lastRecord.salesOrderId!.isNotEmpty) {
+            GlobalData.salesOrderMap = {lastRecord.salesOrderId!: lastRecord};
+            print(
+              "✅ Global Map contains only last salesOrderId: ${GlobalData.salesOrderMap.keys.toList()}",
+            );
+          } else {
+            GlobalData.salesOrderMap = {};
+            print("⚠️ Last record has no salesOrderId");
+          }
         } else {
           GlobalData.salesOrderMap = {};
-          print("⚠️ Last record has no salesOrderId");
+          print("⚠️ No checked-in records found");
         }
-      } else {
-        GlobalData.salesOrderMap = {};
-        print("⚠️ No checked-in records found");
-      }
         isLoading = false;
       });
     } catch (e) {
@@ -127,7 +124,8 @@ class _EmployeereportspageState extends State<Employeereportspage>
 
   // get single regularization
   Future<Map<String, dynamic>?> getsingleregularizationlist(
-      String timesheetId) async {
+    String timesheetId,
+  ) async {
     if (timesheetId.isEmpty) {
       showInSnackBar(context, "❌ timesheetId not found!");
       return null;
@@ -160,53 +158,55 @@ class _EmployeereportspageState extends State<Employeereportspage>
 
   // ---------------- FILTER + SEARCH ----------------
   void _applyDateFilter() {
-  if (allData.isEmpty) return;
+    if (allData.isEmpty) return;
 
-  setState(() {
-    if (fromDate == null && toDate == null && searchQuery.isEmpty) {
-      regularizationList = List.from(allData);
-      return;
-    }
-
-    regularizationList = allData.where((e) {
-      bool dateMatch = true;
-
-      if (e.attendanceDate != null && e.attendanceDate!.isNotEmpty) {
-        try {
-          // Parse dd/MM/yyyy
-          final parts = e.attendanceDate!.split("/");
-          final date = DateTime(
-            int.parse(parts[2]), // yyyy
-            int.parse(parts[1]), // MM
-            int.parse(parts[0]), // dd
-          );
-
-          if (fromDate != null && toDate != null) {
-            dateMatch = (date.isAtSameMomentAs(fromDate!) ||
-                    date.isAfter(fromDate!)) &&
-                (date.isAtSameMomentAs(toDate!) || date.isBefore(toDate!));
-          } else if (fromDate != null) {
-            dateMatch =
-                date.isAtSameMomentAs(fromDate!) || date.isAfter(fromDate!);
-          } else if (toDate != null) {
-            dateMatch =
-                date.isAtSameMomentAs(toDate!) || date.isBefore(toDate!);
-          }
-        } catch (err) {
-          debugPrint("Date parse error: $err");
-          dateMatch = false;
-        }
+    setState(() {
+      if (fromDate == null && toDate == null && searchQuery.isEmpty) {
+        regularizationList = List.from(allData);
+        return;
       }
 
-      bool searchMatch = searchQuery.isEmpty ||
-          e.internalId.toString().toLowerCase().contains(searchQuery) ||
-          (e.employee ?? "").toLowerCase().contains(searchQuery) ||
-          (e.attendanceDate ?? "").toLowerCase().contains(searchQuery);
+      regularizationList = allData.where((e) {
+        bool dateMatch = true;
 
-      return dateMatch && searchMatch;
-    }).toList();
-  });
-}
+        if (e.attendanceDate != null && e.attendanceDate!.isNotEmpty) {
+          try {
+            // Parse dd/MM/yyyy
+            final parts = e.attendanceDate!.split("/");
+            final date = DateTime(
+              int.parse(parts[2]), // yyyy
+              int.parse(parts[1]), // MM
+              int.parse(parts[0]), // dd
+            );
+
+            if (fromDate != null && toDate != null) {
+              dateMatch =
+                  (date.isAtSameMomentAs(fromDate!) ||
+                      date.isAfter(fromDate!)) &&
+                  (date.isAtSameMomentAs(toDate!) || date.isBefore(toDate!));
+            } else if (fromDate != null) {
+              dateMatch =
+                  date.isAtSameMomentAs(fromDate!) || date.isAfter(fromDate!);
+            } else if (toDate != null) {
+              dateMatch =
+                  date.isAtSameMomentAs(toDate!) || date.isBefore(toDate!);
+            }
+          } catch (err) {
+            debugPrint("Date parse error: $err");
+            dateMatch = false;
+          }
+        }
+
+        bool searchMatch =
+            searchQuery.isEmpty ||
+            e.internalId.toString().toLowerCase().contains(searchQuery) ||
+            (e.employee ?? "").toLowerCase().contains(searchQuery) ||
+            (e.attendanceDate ?? "").toLowerCase().contains(searchQuery);
+
+        return dateMatch && searchMatch;
+      }).toList();
+    });
+  }
 
   void _onSearchChanged(String value) {
     setState(() {
@@ -320,8 +320,12 @@ class _EmployeereportspageState extends State<Employeereportspage>
 
             // ===== Date Pickers =====
             Padding(
-              padding:
-                  const EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 4),
+              padding: const EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 10,
+                bottom: 4,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -370,20 +374,20 @@ class _EmployeereportspageState extends State<Employeereportspage>
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : regularizationList.isEmpty
-                      ? const Center(
-                          child: Text(
-                            "No Records Available",
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: regularizationList.length,
-                          itemBuilder: (context, index) {
-                            final e = regularizationList[index];
-                            return _buildRecordCard(e);
-                          },
-                        ),
+                  ? const Center(
+                      child: Text(
+                        "No Records Available",
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: regularizationList.length,
+                      itemBuilder: (context, index) {
+                        final e = regularizationList[index];
+                        return _buildRecordCard(e);
+                      },
+                    ),
             ),
           ],
         ),
@@ -442,17 +446,23 @@ class _EmployeereportspageState extends State<Employeereportspage>
                     ),
                     e.reqstatus == "C"
                         ? IconButton(
-                            icon: const Icon(Icons.access_time,
-                                size: 28, color: Colors.black),
+                            icon: const Icon(
+                              Icons.access_time,
+                              size: 28,
+                              color: Colors.black,
+                            ),
                             onPressed: () async {
                               final safeContext = context;
                               var singleData =
                                   await getsingleregularizationlist(
-                                      e.internalId.toString());
+                                    e.internalId.toString(),
+                                  );
                               if (!mounted) return;
                               if (singleData == null) {
                                 showInSnackBar(
-                                    safeContext, "⚠️ No details found!");
+                                  safeContext,
+                                  "⚠️ No details found!",
+                                );
                                 return;
                               }
                               Get.dialog(
@@ -467,20 +477,24 @@ class _EmployeereportspageState extends State<Employeereportspage>
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                          "📅 Date: ${singleData['attendanceDate'] ?? '-'}"),
+                                        "📅 Date: ${singleData['attendanceDate'] ?? '-'}",
+                                      ),
                                       const SizedBox(height: 8),
                                       Text(
-                                          "🕒 Time In: ${singleData['timeIn'] ?? '-'}"),
+                                        "🕒 Time In: ${singleData['timeIn'] ?? '-'}",
+                                      ),
                                       const SizedBox(height: 8),
                                       Text(
-                                          "🕔 Time Out: ${singleData['timeOut'] ?? '-'}"),
+                                        "🕔 Time Out: ${singleData['timeOut'] ?? '-'}",
+                                      ),
                                       const SizedBox(height: 8),
                                       Text(
-                                          "⏱ Hours Worked: ${formatWorkingTimeSmart(singleData['hoursWorked'])}"),
+                                        "⏱ Hours Worked: ${formatWorkingTimeSmart(singleData['hoursWorked'])}",
+                                      ),
                                       const SizedBox(height: 8),
                                       Text(
-                                          "👤 Employee: ${singleData['employee'] ?? '-'}"),
-                                 
+                                        "👤 Employee: ${singleData['employee'] ?? '-'}",
+                                      ),
                                     ],
                                   ),
                                   actions: [
@@ -494,40 +508,54 @@ class _EmployeereportspageState extends State<Employeereportspage>
                               );
                             },
                           )
-                        : PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert,
-                                size: 28, color: Colors.black),
-                            onSelected: (value) {
-                              if (value == 'Regularize') {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => Regularizescreen(
-                                      date: e.attendanceDate.toString(),
-                                      checkIn: e.timeIn.toString(),
-                                      checkOut: e.timeOut.toString(),
-                                      internalId: e.internalId.toString(),
-                                      employee: e.employee.toString(),
-                                      hoursWorked: e.hoursWorked.toString(),
-                                      salesOrderId: e.salesOrderId.toString(),
-                                    ),
-                                  ),
-                                ).then((regularized) {
-                                  if (regularized == true) {
-                                    setState(() {
-                                      e.reqstatus = "C";
-                                    });
-                                  }
-                                });
-                              }
-                            },
-                            itemBuilder: (context) => const [
-                              PopupMenuItem(
-                                value: 'Regularize',
-                                child: Text("Regularize"),
-                              ),
-                            ],
-                          ),
+                        :
+                        
+                    PopupMenuButton<String>(
+  icon: const Icon(Icons.more_vert, size: 28, color: Colors.black),
+  onSelected: (value) {
+    if (value == 'Regularize') {
+      if (e.timeOut == null || e.timeOut.toString().isEmpty) {
+        // checkOut null ah irundha
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("❌ Cannot regularize because check-out is missing."),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return; // stop navigation
+      }
+
+      // otherwise navigate to Regularize screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Regularizescreen(
+            date: e.attendanceDate.toString(),
+            checkIn: e.timeIn.toString(),
+            checkOut: e.timeOut.toString(),
+            internalId: e.internalId.toString(),
+            employee: e.employee.toString(),
+            hoursWorked: e.hoursWorked.toString(),
+            salesOrderId: e.salesOrderId.toString(),
+          ),
+        ),
+      ).then((regularized) {
+        if (regularized == true) {
+          setState(() {
+            e.reqstatus = "C";
+          });
+        }
+      });
+    }
+  },
+  itemBuilder: (context) => const [
+    PopupMenuItem(
+      value: 'Regularize',
+      child: Text("Regularize"),
+    ),
+  ],
+),
+
                   ],
                 ),
               ],
@@ -540,37 +568,45 @@ class _EmployeereportspageState extends State<Employeereportspage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text("Date"),
-                    Text(e.attendanceDate.toString(),
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      e.attendanceDate.toString(),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text("Check In"),
-                    Text(e.timeIn.toString(),
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      e.timeIn.toString(),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text("Check Out"),
-                    Text(e.timeOut.toString(),
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      e.timeOut.toString(),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text("Work OT"),
-                    Text(formatWorkingTimeSmart(e.otHours),
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      formatWorkingTimeSmart(e.otHours),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ],
                 ),
               ],
             ),
-            SizedBox(height: 12,),
+            SizedBox(height: 12),
             // Row(children: [
             //   Text('Remark', e.)
             // ],)

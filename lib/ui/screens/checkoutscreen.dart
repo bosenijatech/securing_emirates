@@ -2,26 +2,24 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:securing_emirates/model/timesheetmodel/updatetimemodel.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../global/global_data.dart';
-import '../../model/regularization/getregularizationlistmodel.dart';
+import '../../getx_contoller.dart/stauts_contoller.dart';
+import '../../model/timesheetmodel/updatetimemodel.dart';
 import '../../service/captain_emirates_apiservice.dart';
-import '../../service/comFuncService.dart';
 import '../constant/app_color.dart';
 import '../widgets/custom_textfield.dart';
+import '../../service/comFuncService.dart';
 
 class Checkoutscreen extends StatefulWidget {
   final String internalId;
-
   final String timeIn;
 
   const Checkoutscreen({
     super.key,
     required this.internalId,
-    required this.timeIn, 
+    required this.timeIn,
   });
 
   @override
@@ -29,198 +27,184 @@ class Checkoutscreen extends StatefulWidget {
 }
 
 class _CheckoutscreenState extends State<Checkoutscreen> {
-   TextEditingController? salesnumController;
+  final StatusController statusController = Get.find();
+  TextEditingController? salesnumController;
+  TextEditingController remark = TextEditingController();
+
   bool isLoading = false;
   String workedTimeStr = "0 mins";
-   TextEditingController remark = TextEditingController();
-   
 
   @override
-  void initState() {
-    super.initState();
-    // salesnumController = TextEditingController(text: widget.internalId);
-     final record = GlobalData.salesOrderMap[widget.internalId];
-if (GlobalData.salesOrderMap.isNotEmpty) {
-  final lastKey = GlobalData.salesOrderMap.keys.first;
-  final lastRecord = GlobalData.salesOrderMap[lastKey];
+ @override
+void initState() {
+  super.initState();
 
-  print("Last SalesOrderId: $lastKey");
-  print("Record: ${lastRecord?.employee}");
-
-  salesnumController = TextEditingController(
-    text: lastRecord?.salesOrderId?.toString() ?? "❌ Not Found",
-  );
-} else {
+  print("✅ Checkoutscreen initState called");
   salesnumController = TextEditingController(text: "❌ Not Found");
+
+  // Try from controller first
+  if (statusController.statuslist.isNotEmpty) {
+    final latest = statusController.statuslist.last;
+    salesnumController!.text = latest.salesOrderId ?? "❌ Not Found";
+    print("📌 Loaded from statuslist: ${latest.salesOrderId}");
+  } else {
+    // Try from SharedPreferences as last fallback
+    SharedPreferences.getInstance().then((prefs) {
+      final lastSalesOrderId = prefs.getString("LAST_SALES_ORDER_ID") ?? "";
+      if (lastSalesOrderId.isNotEmpty) {
+        setState(() {
+          salesnumController!.text = lastSalesOrderId;
+        });
+        print("📦 Loaded from SharedPrefs: $lastSalesOrderId");
+      } else {
+        print("⚠️ No salesOrderId found anywhere!");
+      }
+    });
+  }
+
+  calculateWorkedTime();
 }
   
-    print("✅ Checkoutscreen -> internalId: ${widget.internalId}");
-    saveInternalId(widget.internalId);
+  void calculateWorkedTime() {
+    if (statusController.statuslist.isEmpty) {
+      print("⚠️ No status entries to calculate worked time");
+      return;
+    }
 
+    final latest = statusController.statuslist.last;
+    final timeInStr = latest.timeIn;
+    final timeOutStr = latest.timeOut;
+
+    print("⏱ Calculating worked time -> timeIn: $timeInStr, timeOut: $timeOutStr");
+
+    if (timeInStr == null) return;
+
+    DateTime now = DateTime.now();
+    DateTime timeIn = parseTime(timeInStr, now);
+    DateTime timeOut = timeOutStr != null ? parseTime(timeOutStr, now) : now;
+
+    if (timeOut.isBefore(timeIn)) timeOut = timeOut.add(const Duration(days: 1));
+
+    Duration diff = timeOut.difference(timeIn);
+    setState(() {
+      workedTimeStr = formatDuration(diff);
+    });
+
+    print("⏱ Worked time calculated: $workedTimeStr (${diff.inMinutes} minutes)");
   }
-Future<void> saveInternalId(String id) async {
-  final prefs = await SharedPreferences.getInstance();
-  const String kLastInternalIdKey = "LAST_INTERNAL_ID";
-  if (prefs.getString(kLastInternalIdKey) == null) {
-    await prefs.setString(kLastInternalIdKey, id);
-    print("💾 Saved internalId to prefs: $id");
-  }
-}
-  /// Format duration for UI display
+
   String formatDuration(Duration diff) {
     int hours = diff.inHours;
     int minutes = diff.inMinutes % 60;
-    if (hours == 0) {
-      return "$minutes mins";
-    } else {
-      return "$hours hrs $minutes mins";
-    }
+    if (hours == 0) return "$minutes mins";
+    return "$hours hrs $minutes mins";
   }
 
-  /// Safely parse time string (handles 24h or 12h formats)
   DateTime parseTime(String timeStr, DateTime now) {
     try {
       timeStr = timeStr.trim().toLowerCase();
       bool isPM = timeStr.contains('pm');
       bool isAM = timeStr.contains('am');
 
-      // Remove AM/PM if present
       timeStr = timeStr.replaceAll(RegExp(r'\s*(am|pm)'), '');
-
       List<String> parts = timeStr.split(":");
-      if (parts.length != 2) throw FormatException("Invalid time format");
-
       int hour = int.parse(parts[0]);
       int minute = int.parse(parts[1]);
 
-      // Convert 12-hour to 24-hour
       if (isPM && hour < 12) hour += 12;
       if (isAM && hour == 12) hour = 0;
 
       return DateTime(now.year, now.month, now.day, hour, minute);
     } catch (e) {
       print("⚠️ Failed to parse time '$timeStr': $e");
-      return now; // fallback to current time
+      return now;
     }
   }
 
-  /// Calculate hours worked (decimal)
-  Future<double> calculateHoursWorked() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? timeInStr = prefs.getString("timeIn");
-    String? timeOutStr = prefs.getString("timeOut");
-
-    if (timeInStr == null || timeOutStr == null) return 0.0;
-
-    DateTime now = DateTime.now();
-    DateTime timeIn = parseTime(timeInStr, now);
-    DateTime timeOut = parseTime(timeOutStr, now);
-
-    // Handle checkout after midnight
-    if (timeOut.isBefore(timeIn)) {
-      timeOut = timeOut.add(Duration(days: 1));
-    }
-
-    Duration difference = timeOut.difference(timeIn);
-    setState(() {
-      workedTimeStr = formatDuration(difference);
-    });
-
-    double hoursWorked = difference.inMinutes / 60;
-    return double.parse(hoursWorked.toStringAsFixed(2));
-  }
-
-  /// Save checkout time in 24-hour format
-  Future<void> saveCheckoutTime() async {
-    final prefs = await SharedPreferences.getInstance();
-    String nowStr = DateFormat("HH:mm").format(DateTime.now());
-    print("💾 Saving checkout time: $nowStr");
-    await prefs.setString("timeOut", nowStr);
-  }
-
-  /// Update timesheet
   Future<void> updatetimesheet() async {
-  final prefs = await SharedPreferences.getInstance();
-  bool? isCheckedIn = prefs.getBool("isCheckedIn");
-  String? timeInStr = prefs.getString("timeIn");
-
-  // 1️⃣ Check if user is checked in
-  if (isCheckedIn != true || timeInStr == null) {
-    showInSnackBar(context, "❌ You are not checked in!");
-    return;
-  }
-
-  setState(() => isLoading = true);
-
-  try {
-    // 2️⃣ Save checkout time (assuming this updates prefs "timeOut")
-    await saveCheckoutTime();
-    String currentTime = prefs.getString("timeOut") ?? "00:00";
-
-    // 3️⃣ Calculate hours worked
-    double hoursWorked = await calculateHoursWorked();
-
-    // 4️⃣ Retrieve last internalId (use consistent key)
-    const String kLastInternalIdKey = "LAST_INTERNAL_ID";
-    String? lastInternalId = prefs.getString(kLastInternalIdKey);
-
-    if (lastInternalId == null) {
-      showInSnackBar(context, "❌ No internalId found for checkout!");
-      setState(() => isLoading = false);
+    if (statusController.statuslist.isEmpty &&
+        statusController.lastSalesOrderId.value.isEmpty) {
+      showInSnackBar(context, "❌ No check-in record found!");
+      print("⚠️ Checkout failed -> statusController empty");
       return;
     }
 
-    // 5️⃣ Prepare post data
-    Map<String, dynamic> postData = {
-      "internalId": lastInternalId,
-      "timeIn": timeInStr,
-      "timeOut": currentTime,
-      "hoursWorked": hoursWorked.toStringAsFixed(2),
+    setState(() => isLoading = true);
+
+    try {
+      final latest = statusController.statuslist.isNotEmpty
+          ? statusController.statuslist.last
+          : null;
+
+      String internalId =
+          latest?.internalId?.toString() ?? widget.internalId.toString();
+      String timeInStr = latest?.timeIn ?? widget.timeIn;
+      String currentTime = DateFormat("HH:mm").format(DateTime.now());
+      String salesOrderId = latest?.salesOrderId ??
+          statusController.lastSalesOrderId.value;
+
+      print(
+          "📌 Checkout details -> internalId: $internalId, timeIn: $timeInStr, currentTime: $currentTime, salesOrderId: $salesOrderId");
+
+      // Calculate hours worked
+      DateTime timeIn = parseTime(timeInStr, DateTime.now());
+      DateTime timeOut = parseTime(currentTime, DateTime.now());
+      if (timeOut.isBefore(timeIn)) timeOut = timeOut.add(const Duration(days: 1));
+      Duration diff = timeOut.difference(timeIn);
+      double hoursWorked = diff.inMinutes / 60;
+
+      print("⏱ Hours worked: $hoursWorked");
+
+      Map<String, dynamic> postData = {
+        "internalId": internalId,
+        "timeIn": timeInStr,
+        "timeOut": currentTime,
+        "hoursWorked": hoursWorked.toStringAsFixed(2),
         "remarks": remark.text.trim(),
+      };
 
-    };
+      print('📤 Checkout postData: $postData');
 
-    print('📤 Checkout postData: $postData');
+      var result = await apiService.updatetimesheet(postData);
+      print('📥 API Response: ${result.body}');
+      UpdatetimeModel response = updatetimeModelFromJson(result.body);
 
-    // 6️⃣ Call API
-    var result = await apiService.updatetimesheet(postData);
-    print('📥 Raw API Response: ${result.body}');
+      if (response.status == true) {
+        showInSnackBar(context, "✅ Timesheet checkout successful!");
+        print("✅ Checkout success");
 
-    UpdatetimeModel response = updatetimeModelFromJson(result.body);
+        // Update controller states
+        statusController.isCheckedIn.value = false;
 
-    if (response.status == true) {
-      // 7️⃣ Successful checkout
-      await prefs.remove("timeIn");
-      await prefs.remove(kLastInternalIdKey);
-      await prefs.setBool("isCheckedIn", false);
+        // Clear the last status entry (if any)
+        if (statusController.statuslist.isNotEmpty) {
+          statusController.statuslist.remove(latest);
+        }
 
-      showInSnackBar(context, "✅ Timesheet checkout successful!");
+        // Clear saved internalId
+        final prefs = await SharedPreferences.getInstance();
+        prefs.remove("LAST_INTERNAL_ID");
+        prefs.setBool("isCheckedIn", false);
 
-      if (mounted) Navigator.pushReplacementNamed(context, "/home");
-    } else {
-      // 8️⃣ API returned failure
-      showInSnackBar(context, "❌ Checkout failed: ${response.message}");
-      await prefs.setBool("isCheckedIn", true);
+        // Navigate back to home
+        if (mounted) Navigator.pushReplacementNamed(context, "/home");
+      } else {
+        showInSnackBar(context, "❌ Checkout failed: ${response.message}");
+        print("❌ Checkout failed -> API returned false: ${response.message}");
+      }
+    } catch (e, stack) {
+      print("🔥 Exception: $e\n$stack");
+      showInSnackBar(context, "❌ Error during checkout: $e");
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
-  } catch (e, stack) {
-    // 9️⃣ Handle exceptions
-    print("🔥 Exception: $e");
-    print("🔥 StackTrace: $stack");
-    showInSnackBar(context, "❌ Error during checkout: $e");
-    await prefs.setBool("isCheckedIn", true);
-  } finally {
-    if (mounted) setState(() => isLoading = false);
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
-    print("📱 Building Checkoutscreen UI");
+    print("📱 Building Checkoutscreen UI -> workedTimeStr: $workedTimeStr");
     return Scaffold(
-      appBar: AppBar(
-        scrolledUnderElevation: 0,
-        title: const Text("Check Out")),
+      appBar: AppBar(title: const Text("Check Out")),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -234,26 +218,25 @@ Future<void> saveInternalId(String id) async {
               readOnly: true,
             ),
            
+           
             const SizedBox(height: 24),
-               CustomRoundedTextField(
-                  width: double.infinity,
-                  type: TextInputType.text,
-                  labelText: 'Note',
-                  control: remark,
-                  lines: 5,
-                  verticalMargin: 16,
-                ),
-                       const SizedBox(height: 24),
+            CustomRoundedTextField(
+              width: double.infinity,
+              type: TextInputType.text,
+              labelText: 'Note',
+              control: remark,
+              lines: 5,
+              verticalMargin: 16,
+            ),
+            const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               height: 50,
-              child: 
-              ElevatedButton(
+              child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColor.primary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: isLoading ? null : updatetimesheet,
                 child: isLoading
@@ -268,6 +251,8 @@ Future<void> saveInternalId(String id) async {
                       ),
               ),
             ),
+            const SizedBox(height: 12),
+       
           ],
         ),
       ),

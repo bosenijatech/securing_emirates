@@ -16,6 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import '../../controller/base_controller.dart';
+import '../../getx_contoller.dart/stauts_contoller.dart';
 import '../../model/getmonthlyattendance/getmonthlyattendancemodel.dart';
 import '../../model/status/statusmodel.dart';
 import '../../model/timesheetmodel/addtimesheetmodel.dart';
@@ -60,7 +61,7 @@ class _HomepageState extends State<Homepage> {
   String? lastSalesOrderId;
   List<Attendance> monthlyattendance = [];
   String lastCheckoutTime = "";
-
+  final StatusController statusController = Get.put(StatusController(api: apiService()));
   @override
   void initState() {
     super.initState();
@@ -68,7 +69,7 @@ class _HomepageState extends State<Homepage> {
     getMonthlyAttendanceForMonth(_focusedDay);
     loadEmployeeName();
     getstatus();
-
+ statusController.getStatus();
     // Initialize selected day to today
     _selectedDay = DateTime.now();
   }
@@ -262,80 +263,7 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
-  // List<Map<String, dynamic>> buildMonthlyAttendanceWithDefaults() {
-  //   List<DateTime> allDays = getAllDaysInMonth(_focusedDay);
-  //   DateTime today = DateTime.now();
-  //   List<Map<String, dynamic>> monthData = [];
-
-  //   bool isSameDay(DateTime a, DateTime b) {
-  //     return a.year == b.year && a.month == b.month && a.day == b.day;
-  //   }
-
-  //   for (var day in allDays) {
-  //     var att = monthlyattendance.firstWhere(
-  //       (a) {
-  //         if (a.attendanceDate == null || a.attendanceDate!.isEmpty) return false;
-  //         DateTime d = parseCustomDate(a.attendanceDate!);
-  //         return d.year == day.year && d.month == day.month && d.day == day.day;
-  //       },
-  //       orElse: () => Attendance(
-  //         employeeType: "",
-  //         timeIn: null,
-  //         timeOut: null,
-  //         hoursWorked: "0:00",
-  //         otHours: "0:00",
-  //         attendanceStatus: null,
-  //       ),
-  //     );
-
-  //     String clockIn = att.timeIn ?? '-';
-  //     String clockOut = att.timeOut ?? '-';
-  //     String workedHours = att.hoursWorked?.toString() ?? "0:00";
-  //     String otHours = att.otHours?.toString() ?? "0:00";
-
-  //     String status;
-
-  //     // Shift timings
-  //     DateTime shiftStart = DateTime(day.year, day.month, day.day, 9, 0);   // 9:00 AM
-  //     DateTime shiftEnd = DateTime(day.year, day.month, day.day, 17, 30);   // 5:30 PM
-  //     DateTime now = DateTime.now();
-
-  //     // Parse actual clock-in time
-  //     DateTime? actualIn = clockIn != '-' ? parseTime(clockIn, day) : null;
-
-  //     // Attendance logic
-  //     if (day.isAfter(today)) {
-  //       status = "Future"; // Future dates
-  //     } else if (isSameDay(day, today) && actualIn == null && now.isBefore(shiftStart)) {
-  //       status = "Future"; // Today before 9 AM
-  //     } else if (att.attendanceStatus?.toLowerCase() == "leave") {
-  //       status = "Leave"; // Employee on leave
-  //     } else if (day.weekday == DateTime.saturday || day.weekday == DateTime.sunday) {
-  //       status = "Weekend"; // Saturday or Sunday
-  //     } else if (isSameDay(day, today) && actualIn == null && now.isAfter(shiftStart) && now.isBefore(shiftEnd)) {
-  //       status = "Late"; // Today, after 9 AM but not yet checked in
-  //     } else if (actualIn != null && actualIn.isAfter(shiftEnd)) {
-  //       status = "Absent"; // Checked in after 5:30 PM
-  //     } else if (actualIn != null && actualIn.isAfter(shiftStart)) {
-  //       status = "Late"; // Checked in after 9 AM but before 5:30 PM
-  //     } else if (actualIn != null) {
-  //       status = "Present"; // Checked in on time
-  //     } else {
-  //       status = "Absent"; // Default fallback
-  //     }
-
-  //     monthData.add({
-  //       'date': day,
-  //       'status': status,
-  //       'clockIn': clockIn,
-  //       'clockOut': clockOut,
-  //       'workedHours': workedHours,
-  //       'otHours': otHours,
-  //     });
-  //   }
-
-  //   return monthData;
-  // }
+  
 
   List<Map<String, dynamic>> buildMonthlyAttendanceWithDefaults() {
     List<DateTime> allDays = getAllDaysInMonth(_focusedDay);
@@ -795,18 +723,18 @@ class _HomepageState extends State<Homepage> {
   }
 
   Future<void> refreshAll() async {
-    await loadEmployeeName(); // refresh employee name
-    await getMonthlyAttendanceForMonth(_focusedDay); // refresh attendance
-    await getstatus(); // refresh status + internalId
-    setState(() {
-      // Preserve selected date's data if it exists
-      if (_selectedDay != null) {
-        _selectedData = getAttendanceForDate(_selectedDay!);
-      } else {
-        _selectedData = getAttendanceForDate(DateTime.now());
-        _selectedDay = DateTime.now();
-      }
-    }); // rebuild full page
+    // await loadEmployeeName(); // refresh employee name
+    // await getMonthlyAttendanceForMonth(_focusedDay); // refresh attendance
+    // await getstatus(); // refresh status + internalId
+    // setState(() {
+    //   // Preserve selected date's data if it exists
+    //   if (_selectedDay != null) {
+    //     _selectedData = getAttendanceForDate(_selectedDay!);
+    //   } else {
+    //     _selectedData = getAttendanceForDate(DateTime.now());
+    //     _selectedDay = DateTime.now();
+    //   }
+    // }); // rebuild full page
   }
 
   @override
@@ -919,57 +847,54 @@ class _HomepageState extends State<Homepage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: GestureDetector(
+                    child: 
+                    GestureDetector(
+                 
                       onTap: () async {
-                        final prefs = await SharedPreferences.getInstance();
-                        bool checkedIn = prefs.getBool("isCheckedIn") ?? false;
+  await statusController.getStatus();  
 
-                        if (checkedIn) {
-                          // Already checked in → open checkout page
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => Checkoutscreen(
-                                                        internalId: lastSalesOrderId ?? "",
-                                timeIn: lastCheckedInTime.toString(),
-                              ),
-                            ),
-                          );
-                        } else {
-                          // Not checked in → open checkin page
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => Checkinpage()),
-                          );
+  final prefs = await SharedPreferences.getInstance();
+  bool checkedIn = prefs.getBool("isCheckedIn") ?? false;
 
-                          if (result != null &&
-                              result is Map<String, dynamic>) {
-                            // Save to prefs and update state immediately
-                            await prefs.setBool(
-                              "isCheckedIn",
-                              result['checkedIn'] ?? false,
-                            );
-                            await prefs.setString(
-                              "lastCheckedInTime",
-                              result['timeIn'] ?? "",
-                            );
-                            await prefs.setString(
-                              "lastSalesOrderId",
-                              result['salesOrderId']?.toString() ?? "",
-                            );
+  final id = statusController.lastSalesOrderId.value;
+  final timeIn = statusController.lastCheckedInTime.value;
 
-                            setState(() {
-                              isCheckedIn = result['checkedIn'] ?? false;
-                              lastCheckedInTime = result['timeIn'] ?? "";
-                              lastSalesOrderId =
-                                  result['salesOrderId']?.toString() ?? "";
-                            });
-                          } else {
-                            // fallback to getstatus API
-                            await getstatus();
-                          }
-                        }
-                      },
+  if (checkedIn) {
+    final storedSalesOrderId = prefs.getString("LAST_SALES_ORDER_ID") ?? id;
+    final storedTimeIn = prefs.getString("lastCheckedInTime") ?? timeIn;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Checkoutscreen(
+          internalId: storedSalesOrderId,
+          timeIn: storedTimeIn,
+        ),
+      ),
+    );
+  } else {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => Checkinpage()),
+    );
+
+    if (result != null && result is Map<String, dynamic>) {
+      await prefs.setBool("isCheckedIn", result['checkedIn'] ?? false);
+      await prefs.setString("lastCheckedInTime", result['timeIn'] ?? "");
+      await prefs.setString("LAST_SALES_ORDER_ID",
+          result['salesOrderId']?.toString() ?? "");
+
+      setState(() {
+        isCheckedIn = result['checkedIn'] ?? false;
+        lastCheckedInTime = result['timeIn'] ?? "";
+        lastSalesOrderId = result['salesOrderId']?.toString() ?? "";
+      });
+    } else {
+      await statusController.getStatus();
+    }
+  }
+},
+
                       child: Container(
                         height: 110,
                         decoration: BoxDecoration(

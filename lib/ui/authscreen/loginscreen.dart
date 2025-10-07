@@ -161,7 +161,7 @@ class _LoginscreenState extends State<Loginscreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
               child: Row(
                 children: [
-                  Image.asset(AppAssets.logo1, width: 120, height: 120),
+                  Image.asset(AppAssets.app_icon, width: 120, height: 120),
                   SizedBox(),
                 ],
               ),

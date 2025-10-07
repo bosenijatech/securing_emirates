@@ -166,7 +166,7 @@ class _RegularizescreenState extends State<Regularizescreen> {
         "salesOrderId": widget.salesOrderId,
         "timeIn": timeIn,
         "timeOut": timeOut,
-        "hoursWorked": hoursWorkedDecimal,
+        "hoursWorked": double.parse(hoursWorkedDecimal.toStringAsFixed(2)),
         "note": noteController.text.trim(),
         "shiftMaster": shiftMasterId.toString(),
       };
